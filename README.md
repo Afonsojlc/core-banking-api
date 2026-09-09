@@ -1,183 +1,249 @@
+# 🏦 Core Banking API
 
-# 🏦 Sistema Bancário API
-
-### Documentação Técnica e Guia de Integração
----
-
-## 👨‍💻 Autores e Identificação
-* **Autor 1:** Afonso José Lopes Carvalho  **Nº:** 049948
-* **Autor 2:** Rui Filipe Sousa Passos  **Nº:** 048863
-* **Instituição:** Instituto Politécnico da Maia IPMAIA
-* **Tecnologia Base:** Laravel 11.x (PHP 8.2+) & SQLite
+<p align="center">
+  <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.3+" />
+  <img src="https://img.shields.io/badge/Laravel-11%20%2F%2013-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel" />
+  <img src="https://img.shields.io/badge/Sanctum-Token%20Auth-red?style=for-the-badge" alt="Laravel Sanctum" />
+  <img src="https://img.shields.io/badge/Architecture-RESTful%20API-009688?style=for-the-badge" alt="RESTful API" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License MIT" />
+</p>
 
 ---
 
-## 📑 Resumo do Projeto
-Este projeto consiste no desenvolvimento de uma **API RESTful** de alto rendimento que simula o *Core* transacional de uma instituição bancária digital moderna (estilo FinTech). A arquitetura foi desenhada com foco na segurança absoluta dos saldos, imutabilidade dos registos financeiros, conformidade ACID, escalabilidade através de técnicas avançadas de *Caching* e funcionalidades inteligentes de poupança.
+## 📌 Executive Summary
+
+**Core Banking API** is a high-performance, enterprise-grade RESTful API simulating the transactional core of a modern digital bank (FinTech / Neobank). 
+
+Engineered with a strong emphasis on **mathematical precision**, **ACID transactional resilience**, and **strict ledger auditability**, the system incorporates modern digital banking innovations inspired by platforms such as Revolut, Moey!, and Nubank — including real-time ECB foreign exchange, automated spare-change savings vaults, step-up 4-digit PIN authorization, and a dynamic French loan amortization simulator.
 
 ---
 
-## ✨ Funcionalidades Avançadas
+## 🏛️ Architectural Highlights & Core Capabilities
 
-### 1. Integridade Monetária com Tipo Decimal (15,4)
-Ao contrário de aplicações académicas normais que utilizam tipos de dados `float` ou `double`, esta API armazena e processa todos os valores monetários usando o formato nativo matemático **`DECIMAL(15,4)`**. Isto elimina por completo os erros catastróficos de arredondamento por vírgula flutuante (*floating-point binary inaccuracies*) ao nível do CPU, garantindo consistência contabilística até à quarta casa decimal.
+### 1. Mathematical Integrity with `DECIMAL(15,4)`
+Standard floating-point types (`float`, `double`) introduce catastrophic binary approximation errors at the CPU level. To eliminate rounding drift, all account balances, vault savings, and ledger transactions are strictly processed and stored using **`DECIMAL(15,4)`**, guaranteeing exact monetary accounting to the fourth decimal place.
 
-### 2. Transações Atómicas e Resiliência ACID
-Todas as mutações de estado financeiro (Depósitos, Levantamentos e especialmente Transferências entre contas diferentes) são executadas sob o ecossistema de **Transações de Base de Dados (`DB::transaction`)**. 
-* Numa transferência, se o débito na Conta A for bem-sucedido, mas o crédito na Conta B falhar devido a uma quebra de ligação ou erro do servidor, o Laravel aciona instantaneamente um **`Rollback`**.
-* O dinheiro nunca desaparece nem fica duplicado no limbo do sistema, assegurando consistência estrita.
+### 2. ACID Transactions & Pessimistic Concurrency Locking
+All balance-mutating financial operations (Deposits, Withdrawals, Transfers, and Card Payments) run within atomic database transactions (`DB::transaction`) protected by **pessimistic row-level locking (`lockForUpdate()`)**.
+* During cross-account transfers, accounts are retrieved and locked in deterministic sorted ID order to prevent database deadlocks.
+* If any step fails (network outage, database error, or insufficient balance), an immediate rollback occurs, ensuring money never gets duplicated or lost in limbo.
 
-### 3. Blindagem de Saldos e Resposta de Erro Padronizada (HTTP 422)
-Seguindo as especificações rigorosas do enunciado, o motor de levantamentos e transferências valida previamente a suficiência de fundos. Tentativas de movimentação ilícita que resultem em saldos negativos são imediatamente intercetadas e abortadas, respondendo com o estado **`422 Unprocessable Entity`** acompanhado de uma mensagem JSON estruturada.
+### 3. "Step-Up" 4-Digit PIN Security 🔒
+The application enforces a two-factor security model:
+* **Session Layer:** Bearer token authentication powered by `Laravel Sanctum`.
+* **High-Risk Operations Layer:** Critical money-out actions (`withdraw`, `transfer`, `payment`) require authorization through an encrypted **4-digit PIN** verified on-the-fly via `Hash::check()`.
 
-### 4. Autenticação "Step-Up" (Grau Militar) 🔒
-O sistema implementa uma camada de segurança dupla utilizada por bancos de topo:
-* **Sessão:** Protegida via Tokens de Autenticação (`Laravel Sanctum`).
-* **Validação Crítica:** Sempre que o dinheiro *sai* da conta (Levantamentos, Transferências ou Pagamentos), a API exige a assinatura da operação através de um **Código PIN de 4 dígitos**. Este PIN está encriptado unidirecionalmente na base de dados e é validado em tempo real via `Hash::check()`.
+### 4. Real-Time Multi-Currency FX Engine with Caching 💱
+Supports multi-currency accounts and cross-currency transactions (EUR, USD, GBP, CHF, JPY, CAD, AUD).
+* Integrates directly with the **Frankfurter API** (official European Central Bank reference data).
+* Utilizes Laravel's Cache facade (`Cache::remember`) with a 3600-second (1-hour) TTL to prevent third-party rate limits and maintain sub-millisecond response latency.
 
-### 5. Motor Cambial Multi-Moeda (com Caching) 💱
-A API suporta contas em diferentes moedas globais (EUR, USD, GBP, JPY, etc.). Quando ocorre uma transferência transfronteiriça, o sistema consulta a **Frankfurter API** (Dados do Banco Central Europeu). 
-* **Otimização de Escalabilidade:** Para evitar *Rate Limiting* (bloqueio por excesso de pedidos) e garantir respostas em milissegundos, as taxas de câmbio são memorizadas através da *Facade* `Cache` do Laravel por 3600 segundos (1 hora).
+### 5. Micro-Savings Vaults & Automated "Spare Change" 💰
+* **Savings Vaults:** Sub-accounts tied to a primary checking account, with independent currency denomination and target savings goals.
+* **Spare Change Rounding:** When executing a card payment (e.g. €4.20), the engine computes the mathematical ceiling (`ceil()`), debits the total (€5.00), and routes the spare change (€0.80) directly into the active savings vault within the same atomic transaction.
 
-### 6. Cofres de Poupança (Vaults) & "Spare Change" 💰
-Inspirado em neobancos líderes de mercado, o projeto incorpora a funcionalidade de "Poupança Indolor":
-* **Cofres (Vaults):** O utilizador pode criar múltiplos cofres com objetivos de poupança isolados da conta principal (com herança e câmbio automático de moeda).
-* **Arredondamento Automático (Spare Change):** Ao efetuar um Pagamento (ex: 4.20€), a API calcula o teto matemático (`ceil()`) da operação (5.00€), debita o valor da compra, e transfere cirurgicamente os cêntimos de troco (0.80€) diretamente para o Cofre de Poupança ativo no exato mesmo milissegundo.
+### 6. Cursor-Based High-Performance Pagination 📜
+Instead of traditional `offset`-based pagination (which degrades exponentially ($O(N)$) as transaction tables scale into millions of rows), the ledger uses **cursor pagination (`cursorPaginate()`)**. This ensures constant $O(1)$ query execution time, ideal for mobile infinite-scrolling feeds.
 
-### 7. Paginação por Cursor de Alta Performance
-Para a listagem de extratos e históricos de transações volumosos, a aplicação abandona o método tradicional de paginação por *Offset* (que degrada exponencialmente a performance à medida que a tabela cresce) e adota a **Paginação por Cursor (`cursorPaginate`)**. 
-O sistema lê os registos com base num ponteiro codificado indexado temporariamente, garantindo tempos de resposta constantes de escassos milissegundos, ideais para ecrãs de *Infinite Scroll*.
+### 7. French Loan Amortization Simulator (Price Table)
+Features an analytical loan simulator computing exact monthly installments using the French constant-annuity formula:
 
-### 8. Extratos Paginados e Dinâmicos (Ledger) 📜
-Os históricos de transações não sobrecarregam a memória do servidor. A extração de dados utiliza `cursorPaginate()` e formata a resposta JSON em tempo real. O utilizador recebe um extrato limpo com dados da contraparte (Ex: *"Transferência recebida de João Silva"*), espelhando a experiência do utilizador do Revolut ou Moey!.
+$$P = V \frac{i(1+i)^n}{(1+i)^n - 1}$$
 
-### 9. Algoritmo de Amortização Financeira (Sistema Francês)
-O simulador de empréstimos utiliza a fórmula avançada de amortização com prestações constantes (Tabela Price / Sistema Francês):
-
-$$P = V \\frac{i(1+i)^n}{(1+i)^n - 1}$$
-
-O algoritmo efetua um ciclo dinâmico mês a mês para cindir com precisão cirúrgica a quota de juros cobrada sobre o capital em dívida face à quota de amortização real que abate o saldo devedor até à sua total extinção no termo do contrato.
+Generates a complete month-by-month schedule detailing principal amortization, interest charged on remaining capital, and declining balance down to zero.
 
 ---
 
-## 🗂 Estrutura do Modelo de Dados (BD)
+## 🗂️ Database Architecture & Relational Model
 
-A base de dados está desenhada de forma relacional e rigorosamente normalizada, suportada por **5 entidades fundamentais** que garantem a escalabilidade e a integridade matemática de todo o ecossistema financeiro:
+The database is fully normalized and built upon **5 core entities**:
 
-1. **`users` (Utilizadores):** Guarda os metadados dos clientes. Para além da autenticação padrão (suportada por tokens Sanctum), inclui campos de negócio obrigatórios como o NIF (com restrição de unicidade), a Data de Nascimento e, crucialmente, o Código PIN de 4 dígitos. Este PIN é trancado criptograficamente na base de dados (via `Hash`), sendo o pilar da arquitetura de segurança *Step-Up* exigida nas operações de saída de capital.
+```mermaid
+erDiagram
+    USERS ||--o{ ACCOUNT_USER : "participates in"
+    ACCOUNTS ||--o{ ACCOUNT_USER : "assigned to"
+    ACCOUNTS ||--o{ TRANSACTIONS : "records"
+    ACCOUNTS ||--o{ VAULTS : "maintains"
+    USERS ||--o{ TRANSACTIONS : "authorizes"
 
-2. **`accounts` (Contas Bancárias):** A entidade financeira principal. Contém o número de conta exclusivo (um IBAN gerado dinamicamente com o prefixo PT50 e mecanismo anti-colisão), a moeda base da conta (`currency` — que serve de âncora ao motor cambial) e o saldo corrente. Para evitar anomalias informáticas de arredondamento, o saldo é estritamente armazenado com alta precisão matemática (`DECIMAL(15,4)`).
+    USERS {
+        bigint id PK
+        string name
+        string email UK
+        string nif UK
+        date birth_date
+        string password
+        string pin_code
+        timestamp created_at
+    }
 
-3. **`account_user` (Pivot Muitos-para-Muitos):** Tabela intermédia avançada que estabelece a ligação entre os utilizadores e as suas contas. Define o nível de privilégio de cada titular através da coluna `role` (ex: `owner` ou `member`). Esta abstração relacional permite, de forma nativa, que o sistema seja facilmente expandido no futuro para suportar contas conjuntas, contas solidárias ou contas empresariais com múltiplos gestores.
+    ACCOUNTS {
+        bigint id PK
+        string account_number UK
+        string currency
+        decimal balance "15,4"
+        timestamp created_at
+    }
 
-4. **`transactions` (Livro Razão / *Ledger*):** O registo histórico e imutável de todos os movimentos financeiros. Cada operação gera uma referência alfanumérica única (ex: `TRF-...`, `PAY-...`). Armazena não só o montante e a moeda final debitada/creditada, mas também os dados da moeda de origem (`original_amount` e `original_currency`) para efeitos de auditoria de câmbios. Guarda ainda o estado crucial do saldo imediatamente após a operação (`balance_after`), garantindo a rastreabilidade exata do dinheiro no tempo. O campo taxonómico `type` classifica todas as operações da API: `DEPOSIT`, `WITHDRAWAL`, transferências interbancárias (`TRANSFER_IN`/`OUT`) e, mais recentemente, operações de poupança como `VAULT_FUNDING`, `VAULT_WITHDRAWAL`, pagamentos com cartão (`PAYMENT`) e captura de trocos (`SPARE_CHANGE`).
+    ACCOUNT_USER {
+        bigint user_id PK,FK
+        bigint account_id PK,FK
+        string role
+    }
 
-5. **`vaults` (Cofres de Poupança):** O núcleo do sistema de poupanças isoladas, responsável por guardar os diferentes objetivos financeiros do utilizador sem que estes se misturem com o saldo transacional corrente. Cada registo representa um cofre individual e está obrigatoriamente ligado a uma conta bancária através da chave estrangeira `account_id` (numa relação de 1:N). A tabela armazena dados descritivos como o nome do objetivo (`name`), a moeda isolada configurada para o cofre (`currency`), o saldo acumulado (`balance` em `DECIMAL(15,4)`) e uma meta financeira opcional (`target_amount`). O elemento tecnológico de maior destaque nesta tabela é o campo booleano `spare_change_active`, que atua como o "interruptor" lógico do sistema: quando ativado, autoriza a API a capturar invisivelmente os cêntimos de troco provenientes de compras arredondadas na conta principal, canalizando-os de forma atómica para o cofre.
+    TRANSACTIONS {
+        bigint id PK
+        bigint account_id FK
+        bigint user_id FK
+        bigint destination_account_id FK
+        string reference UK
+        string type
+        decimal amount "15,4"
+        decimal original_amount "15,4"
+        string original_currency
+        decimal balance_after "15,4"
+        timestamp created_at
+    }
+
+    VAULTS {
+        bigint id PK
+        bigint account_id FK
+        string name
+        string currency
+        decimal balance "15,4"
+        decimal target_amount "15,4"
+        boolean spare_change_active
+        timestamp created_at
+    }
+```
+
+* **`users`:** Customer profile data including unique Tax ID (`nif`), date of birth, and hashed `pin_code`.
+* **`accounts`:** Primary financial accounts with auto-generated unique `PT50` IBANs, balance (`DECIMAL(15,4)`), and base currency.
+* **`account_user`:** Many-to-many pivot table defining ownership (`owner` / `member`), enabling future support for joint and corporate accounts.
+* **`transactions`:** Immutable double-entry financial ledger recording unique reference IDs, original amounts, currencies, exchange conversion details, and post-transaction balances (`balance_after`).
+* **`vaults`:** Dedicated sub-account savings buckets with automatic currency conversion and spare-change collection switches.
 
 ---
 
-## 🗺 Matriz de Endpoints e Rotas da API
+## 🗺️ API Endpoints Matrix
 
-| Método | Endpoint | Função Técnica | Segurança | Payloads / Parâmetros |
+| HTTP Method | Endpoint | Description | Auth Level | Payload / Parameters |
 | :--- | :--- | :--- | :--- | :--- |
-| **POST** | `/api/register` | Criação de cliente e chave criptográfica | Pública | `name`, `email`, `password`, `nif`, `birth_date`, `pin_code` |
-| **POST** | `/api/login` | Autenticação e emissão de Bearer Token | Pública | `email`, `password` |
-| **GET** | `/api/accounts/my-accounts` | Listagem de todas as contas do utilizador autenticado | 🔐 Sanctum | Nenhum |
-| **POST** | `/api/accounts` | Abertura de conta bancária (IBAN PT50) e suporte Multi-Moeda | 🔐 Sanctum | `currency` (Opcional, default EUR) |
-| **GET** | `/api/accounts/{id}/balance` | Consulta em tempo real do saldo formatado | 🔐 Sanctum | ID da Conta (Bloqueio 403 se não for titular) |
-| **POST** | `/api/accounts/{id}/deposit` | Injeção de fundos monetários (com Câmbio Automático) | 🔐 Sanctum | `amount`, `currency` (Opcional) |
-| **POST** | `/api/accounts/{id}/withdraw` | Levantamento com validação de saldo e motor cambial | 🔐 Sanctum + PIN | `amount`, `currency` (Opcional), `pin_code` |
-| **POST** | `/api/transfers` | Transferência atómica interbancária com cruzamento de moedas | 🔐 Sanctum + PIN | `source_account_id`, `destination_account_id`, `amount`, `pin_code` |
-| **POST** | `/api/accounts/{id}/payment` | Compra com cartão e motor invisível de "Spare Change" (Trocos) | 🔐 Sanctum + PIN | `amount`, `currency` (Opcional), `pin_code` |
-| **GET** | `/api/accounts/{id}/transactions` | Histórico de movimentos paginado por cursor (*Ledger*) | 🔐 Sanctum | ID da Conta |
-| **GET** | `/api/accounts/{id}/statement` | Extrato avançado com filtros dinâmicos de auditoria | 🔐 Sanctum | `type`, `start_date`, `end_date` (Query Params) |
-| **GET** | `/api/vaults/my-vaults` | Listagem global de todos os Cofres de Poupança do cliente | 🔐 Sanctum | Nenhum |
-| **POST** | `/api/accounts/{accountId}/vaults` | Criação de Cofre de Poupança (Herança e isolamento de moeda) | 🔐 Sanctum | `name`, `target_amount`, `currency` (Opcional) |
-| **POST** | `/api/vaults/{id}/deposit` | Reforço do Cofre a partir do saldo da Conta Principal | 🔐 Sanctum | `amount` |
-| **POST** | `/api/vaults/{id}/withdraw` | Resgate de fundos do Cofre de volta para a Conta Principal | 🔐 Sanctum | `amount` |
-| **PATCH** | `/api/vaults/{id}/spare-change` | Interruptor LIGA/DESLIGA do arredondamento automático | 🔐 Sanctum | Nenhum |
-| **POST** | `/api/loans/simulate` | Cálculo matemático do Sistema de Amortização Francês | 🔐 Sanctum | `amount`, `term_months`, `interest_rate`, `currency` |
+| **POST** | `/api/register` | Register new customer profile and PIN | Public | `name`, `email`, `password`, `nif`, `birth_date`, `pin_code` |
+| **POST** | `/api/login` | Authenticate customer & issue Bearer Token | Public | `email`, `password` |
+| **GET** | `/api/accounts/my-accounts` | List all accounts associated with user | 🔐 Sanctum | None |
+| **POST** | `/api/accounts` | Open account with PT50 IBAN and base currency | 🔐 Sanctum | `currency` (Optional, defaults to EUR) |
+| **GET** | `/api/accounts/{id}/balance` | Query real-time account balance | 🔐 Sanctum | Account ID |
+| **POST** | `/api/accounts/{id}/deposit` | Deposit funds with automated FX conversion | 🔐 Sanctum | `amount`, `currency` (Optional) |
+| **POST** | `/api/accounts/{id}/withdraw` | Withdraw funds with PIN signature check | 🔐 Sanctum + PIN | `amount`, `currency` (Optional), `pin_code` |
+| **POST** | `/api/transfers` | Cross-account transfer with FX and atomic locks | 🔐 Sanctum + PIN | `source_account_id`, `destination_account_id`, `amount`, `pin_code` |
+| **POST** | `/api/accounts/{id}/payment` | Card payment with automated Spare Change rounding | 🔐 Sanctum + PIN | `amount`, `currency` (Optional), `pin_code` |
+| **GET** | `/api/accounts/{id}/transactions` | Cursor-paginated ledger transaction history | 🔐 Sanctum | Account ID |
+| **GET** | `/api/accounts/{id}/statement` | Filtered account statement with counterpart details | 🔐 Sanctum | `type`, `start_date`, `end_date` (Query params) |
+| **GET** | `/api/vaults/my-vaults` | List all savings vaults across user accounts | 🔐 Sanctum | None |
+| **POST** | `/api/accounts/{accountId}/vaults` | Create savings vault with custom currency and target | 🔐 Sanctum | `name`, `target_amount`, `currency` (Optional) |
+| **POST** | `/api/vaults/{id}/deposit` | Fund vault from primary account balance | 🔐 Sanctum | `amount` |
+| **POST** | `/api/vaults/{id}/withdraw` | Redeem funds from vault back to primary account | 🔐 Sanctum | `amount` |
+| **PATCH** | `/api/vaults/{id}/spare-change` | Toggle automated Spare Change rounding on/off | 🔐 Sanctum | None |
+| **POST** | `/api/loans/simulate` | Calculate French loan amortization schedule | 🔐 Sanctum | `amount`, `term_months`, `interest_rate`, `currency` |
 
 ---
 
-## 🚀 Guia Prático de Instalação e Execução
+## 🚀 Quick Start & Local Setup
 
-Siga os passos abaixo sequencialmente para colocar a API funcional no seu ambiente local em menos de 3 minutos:
+Follow these steps to run the API locally in under 2 minutes:
 
-### 1. Descarregar o Projeto
-
-```bash
-git clone https://github.com/afonsojlc/sistema-bancario-api.git
-```
-
+### 1. Clone the Repository
 
 ```bash
-cd sistema-bancario-api
+git clone https://github.com/Afonsojlc/core-banking-api.git
+cd core-banking-api
 ```
 
-### 2. Instalar Dependências do PHP
+### 2. Install PHP Dependencies
 
 ```bash
 composer install
 ```
 
-### 3. Configurar Ficheiro de Ambiente
+### 3. Environment Configuration
 
 ```bash
-cp .env.example .env    
-```
-```bash
+cp .env.example .env
 php artisan key:generate
 ```
 
-(Por padrão, o Laravel 11 vem pré-configurado para SQLite. Não necessita de instalar servidores locais pesados de MySQL, a base de dados correrá num ficheiro local isolado gerado no próximo passo).
+*(By default, the application runs on SQLite with zero external database configuration required).*
 
-### 4. Executar as Migrations do Sistema
+### 4. Run Migrations & Seed Demo Data
 
 ```bash
-php artisan migrate
+php artisan migrate --seed
 ```
 
-Nota: Se o terminal perguntar se deseja criar o ficheiro SQLite da base de dados, confirme digitando yes ou y.
+The database seeder automatically creates pre-configured accounts and demo profiles:
+* **Demo User:** `demo@bank.com` | Password: `password123` | PIN: `1234`
+  * Primary Account: `EUR` with balance of **€5,000.00**
+  * Secondary Account: `USD` with balance of **$2,500.00**
+  * Active Vault: `"Emergency Fund"` with Spare Change enabled (**€450.00**)
+* **Transfer Counterpart:** `jane@bank.com` | Password: `password123` | PIN: `1234`
 
-### 5. Arrancar o Servidor de Desenvolvimento
+### 5. Start Development Server
 
 ```bash
 php artisan serve
 ```
 
-O servidor ficará ativo em: http://127.0.0.1:8000. As suas rotas de API estarão prontas a responder sob o prefixo /api.
+The API will be live at `http://127.0.0.1:8000/api`.
 
 ---
 
-## 🗃 Instruções de Teste Automatizado com o Postman
+## 🧪 Automated Testing
 
-Na raiz do projeto, encontra os dois ficheiros de configuração profissional gerados para auditoria da professora:
+The repository includes a comprehensive testing suite (`tests/Feature` and `tests/Unit`):
 
-    1. Sistema_Bancario_API_Postman_Collection.json (A coleção completa de pedidos).
+```bash
+php artisan test
+```
 
-    2. Sistema_Bancario_Local_Environment.json (O ambiente com as variáveis locais).
-
-### Passos para Correr os Testes:
-
-1. Abra a aplicação do Postman.
-
-2. Clique no botão "Import" no canto superior esquerdo e selecione ambos os ficheiros JSON instalados na raiz do projeto.
-
-3. No canto superior direito do Postman, clique na caixa de seleção de ambiente e selecione "Sistema Bancário - Ambiente Local".
-
-4. Execute o pedido na pasta 1. Autenticação -> Registar Novo Cliente. O Postman executará um script em segundo plano que captura automaticamente o token gerado e o armazena na variável de sessão global.
-
-5. Pode testar imediatamente qualquer outra rota trancada (como Criar Conta ou Depósito). O token será injetado de forma transparente no cabeçalho de autorização.
+### Coverage Highlights:
+* **`AuthTest`:** User registration validation (NIF, date of birth, PIN format), token issuance, invalid credential handling.
+* **`AccountTest`:** PT50 IBAN generation, multi-currency support, balance access authorization (403 prevention).
+* **`TransactionTest`:** Deposits, withdrawals with valid/invalid PINs, cross-account transfers with atomic rollbacks, card payments with automated spare change.
+* **`VaultTest`:** Vault creation, funding, withdrawal, and spare-change toggle logic.
+* **`LoanTest`:** Mathematical verification of Price constant-annuity amortization schedules.
 
 ---
-## 🔮 Trabalhos Futuros (Visão Arquitetural)
 
-O core do sistema encontra-se 100% estabilizado. Numa futura iteração (Sprint-2) do desenvolvimento deste software, propõe-se:
+## 📮 Postman Integration
 
-1.  **Portal de Back-Office (RBAC - Role-Based Access Control):** Criação de um tipo de utilizador `Admin` (Gerente) com privilégios de Compliance para congelar contas e reverter transações suspeitas de fraude.
+Ready-to-run Postman collection and environment files are provided in the repository root:
 
-2.  **Cron Jobs de Juros:** Utilização do *Task Scheduling* do Laravel para correr um script noturno de processamento em lote (*batch processing*), creditando micro-juros sobre os saldos mantidos nos Cofres de Poupança (Vaults).
+* `Core_Banking_API.postman_collection.json`
+* `Core_Banking_API.local_environment.json`
 
-3.  **Webhooks:** Emissão de alertas em tempo real para dispositivos móveis (Push Notifications) quando a conta recebe um crédito.
+### Usage:
+1. Open **Postman** and click **Import**.
+2. Select both JSON files from the root directory.
+3. Select the **Core Banking API - Local Environment** in the top-right environment selector.
+4. Execute `1. Authentication -> Register New Customer` or `Login`. The automated test script will automatically capture the returned bearer token into the `{{token}}` environment variable, authenticating all subsequent requests.
+
 ---
+
+## 🔮 Roadmap
+
+- [ ] **Role-Based Access Control (RBAC):** Compliance and manager portal for account freeze and AML fraud monitoring.
+- [ ] **Task Scheduling (Interest Accrual):** Scheduled cron jobs to credit micro-interest rates on savings vault balances.
+- [ ] **Webhooks:** Push notifications dispatching real-time balance mutation events.
+
+---
+
+## 👨‍💻 Authors & Credits
+
+This project was developed jointly by:
+* **Afonso Carvalho** - [GitHub](https://github.com/Afonsojlc)
+* **Rui Passos** - [GitHub](https://github.com/RuiPassos)
+
+### 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

@@ -32,7 +32,7 @@ class TransactionController extends Controller
 
         $transactionResult = DB::transaction(function () use ($id, $amount, $inputCurrency, $user) {
             
-            $account = Account::find($id);
+            $account = Account::lockForUpdate()->find($id);
 
             if (!$account) {
                 return response()->json(['error' => 'Not Found', 'message' => 'Conta não encontrada.'], 404);
@@ -122,7 +122,7 @@ class TransactionController extends Controller
         }
 
         return DB::transaction(function () use ($id, $amount, $inputCurrency, $user) {
-            $account = Account::find($id);
+            $account = Account::lockForUpdate()->find($id);
 
             if (!$account) return response()->json(['error' => 'Not Found', 'message' => 'Conta não encontrada.'], 404);
             if (!$account->users()->where('user_id', $user->id)->exists()) return response()->json(['error' => 'Access Denied', 'message' => 'Sem permissão.'], 403);
@@ -211,7 +211,7 @@ class TransactionController extends Controller
             
             $ids = [$sourceId, $destinationId];
             sort($ids);
-            Account::whereIn('id', $ids)->get();
+            Account::whereIn('id', $ids)->lockForUpdate()->get();
 
             $sourceAccount = Account::find($sourceId);
             $destinationAccount = Account::find($destinationId);
@@ -321,7 +321,7 @@ class TransactionController extends Controller
         }
 
         return DB::transaction(function () use ($id, $amount, $inputCurrency, $user) {
-            $account = Account::find($id);
+            $account = Account::lockForUpdate()->find($id);
 
             if (!$account) return response()->json(['error' => 'Not Found'], 404);
             if (!$account->users()->where('user_id', $user->id)->exists()) return response()->json(['error' => 'Access Denied'], 403);
@@ -346,7 +346,7 @@ class TransactionController extends Controller
             $ceilAmount = ceil($amount);
             $spareChange = round($ceilAmount - $amount, 2);
 
-            $activeVault = \App\Models\Vault::where('account_id', $account->id)->where('spare_change_active', true)->first();
+            $activeVault = \App\Models\Vault::where('account_id', $account->id)->where('spare_change_active', true)->lockForUpdate()->first();
 
             // Variáveis de controlo do troco
             $totalAccountDeduction = $convertedPaymentAmount;

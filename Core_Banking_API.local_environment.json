@@ -1,6 +1,6 @@
 {
 	"id": "5c73be79-9a8b-47a1-ad85-724f2b8e9386",
-	"name": "Sistema Bancário - Ambiente Local",
+	"name": "Core Banking API - Local Environment",
 	"values": [
 		{
 			"key": "base_url",
