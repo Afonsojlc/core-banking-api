@@ -238,7 +238,12 @@ Ready-to-run Postman collection and environment files are provided in the reposi
 
 ---
 
-## 👨‍💻 Authors & License
+## 👨‍💻 Authors & Credits
 
+This project was developed jointly by:
 * **Afonso Carvalho** - [GitHub](https://github.com/Afonsojlc)
-* **License:** This project is licensed under the [MIT License](LICENSE).
+* **Rui Passos** - Co-Author
+
+### 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
