@@ -109,8 +109,8 @@ class VaultController extends Controller
         $user = $request->user();
 
         return DB::transaction(function () use ($id, $vaultAmount, $user) {
-            $vault = Vault::with('account')->findOrFail($id);
-            $account = $vault->account;
+            $vault = Vault::lockForUpdate()->findOrFail($id);
+            $account = Account::lockForUpdate()->findOrFail($vault->account_id);
 
             if (!$account->users()->where('user_id', $user->id)->exists()) {
                 return response()->json(['error' => 'Access Denied'], 403);
@@ -178,8 +178,8 @@ class VaultController extends Controller
         $user = $request->user();
 
         return DB::transaction(function () use ($id, $vaultAmountToWithdraw, $user) {
-            $vault = Vault::with('account')->findOrFail($id);
-            $account = $vault->account;
+            $vault = Vault::lockForUpdate()->findOrFail($id);
+            $account = Account::lockForUpdate()->findOrFail($vault->account_id);
 
             if (!$account->users()->where('user_id', $user->id)->exists()) {
                 return response()->json(['error' => 'Access Denied'], 403);

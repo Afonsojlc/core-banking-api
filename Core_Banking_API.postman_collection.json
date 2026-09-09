@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "9a846f5b-7cd3-44a2-89e3-102c6aeb6aa1",
-    "name": "Sistema Bancario API",
-    "description": "Collection profissional e completa para testes de integracao do Sistema Bancario API (Laravel 11). Inclui scripts de automacao para captura de tokens e cenarios de erro reais (ACID / HTTP 422).",
+    "name": "Core Banking API",
+    "description": "Postman integration test collection for Core Banking API. Includes automated test scripts for bearer token extraction, positive flows, and error scenarios (ACID / HTTP 422 / PIN security).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "52625259"
   },

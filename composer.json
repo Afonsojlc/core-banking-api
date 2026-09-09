@@ -1,9 +1,23 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "afonsojlc/core-banking-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "High-performance RESTful Core Banking API featuring ACID double-entry ledger, multi-currency foreign exchange, step-up PIN security, automated spare-change savings vaults, and loan amortization.",
+    "keywords": [
+        "core-banking",
+        "laravel",
+        "fintech",
+        "multi-currency",
+        "sanctum",
+        "rest-api",
+        "ledger"
+    ],
+    "authors": [
+        {
+            "name": "Afonso Carvalho",
+            "homepage": "https://github.com/afonsojlc"
+        }
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.3",
