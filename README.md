@@ -242,7 +242,7 @@ Ready-to-run Postman collection and environment files are provided in the reposi
 
 This project was developed jointly by:
 * **Afonso Carvalho** - [GitHub](https://github.com/Afonsojlc)
-* **Rui Passos** - Co-Author
+* **Rui Passos** - [GitHub](https://github.com/RuiPassos)
 
 ### 📄 License
 
