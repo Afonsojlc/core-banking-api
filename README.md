@@ -8,9 +8,10 @@
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License MIT" />
 </p>
 
-A RESTful API simulating the backend of a digital bank, built with **PHP 8.3**, **Laravel 11**, and **Laravel Sanctum**.
+> A RESTful API simulating the backend of a digital bank, built with **PHP 8.3**, **Laravel 11**, and **Laravel Sanctum**.
 
-Developed as an academic capstone project (Evaluation: **20/20**), this API demonstrates core financial transactions: account management with PT50 IBANs, atomic cross-account transfers, pessimistic concurrency locking, 4-digit PIN verification for sensitive actions, and micro-savings vaults.
+> [!NOTE]
+> Developed as an academic capstone project (Evaluation: **20/20**), this API demonstrates core financial transactions: account management with PT50 IBANs, atomic cross-account transfers, pessimistic concurrency locking, 4-digit PIN verification for sensitive actions, and micro-savings vaults.
 
 ---
 
